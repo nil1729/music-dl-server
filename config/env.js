@@ -12,4 +12,10 @@ module.exports = {
   MAX_RETRY: Number(process.env.MAX_RETRY),
   SPOTIFY_API_TIMEOUT: Number(process.env.SPOTIFY_API_TIMEOUT),
   MAX_API_TIMEOUT: Number(process.env.MAX_API_TIMEOUT),
+  MUSIC_MAX_DURATION: Number(process.env.MUSIC_MAX_DURATION),
+  YT_MP4_CONVERTER_URL: process.env.YT_MP4_CONVERTER_URL,
+  YT_GOOGLE_CDN_TOKEN: process.env.YT_GOOGLE_CDN_TOKEN,
+  YT_MP4_QUALITY: Number(process.env.YT_MP4_QUALITY),
+  DOWNLOAD_PATH_MP4: process.env.DOWNLOAD_PATH_MP4,
+  DOWNLOAD_PATH_MP3: process.env.DOWNLOAD_PATH_MP3,
 };

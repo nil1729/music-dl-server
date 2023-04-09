@@ -56,6 +56,9 @@ const TrackSchema = new Schema(
       required: true,
       default: false,
     },
+    music_dl_cdn: {
+      type: Types.String,
+    },
     music_dl_hit: {
       type: Types.Number,
       required: true,

@@ -153,6 +153,8 @@ function sendLocalAlbumResponse(data) {
         explicit: t.explicit,
         preview_url: t.preview_url,
         spotify_url: t.spotify_app_url,
+        music_dl_downloaded: t.music_dl_downloaded,
+        music_dl_cdn: t.music_dl_cdn,
       };
     }),
     music_dl_hit: 0,
@@ -199,6 +201,8 @@ function sendSpotifyAlbumResponse(data) {
         explicit: t.explicit,
         preview_url: t.preview_url,
         spotify_url: t.external_urls.spotify,
+        music_dl_downloaded: false,
+        music_dl_cdn: null,
       };
     }),
     music_dl_hit: 0,
@@ -448,4 +452,4 @@ async function saveAlbumTrackMap(localAlbumId, retryCount) {
   }
 }
 
-module.exports = { getMetadata };
+module.exports = { getMetadata, getLocalMetadata };
