@@ -24,6 +24,7 @@ const TrackSchema = new Schema(
     artists: [
       {
         type: Types.ObjectId,
+        ref: 'Artist',
       },
     ],
     duration: {

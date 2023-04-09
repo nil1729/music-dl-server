@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const mongoSanitize = require('express-mongo-sanitize');
+const responseTime = require('response-time');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 const apiRoutes = require('./routes');
@@ -28,6 +29,9 @@ app.use(xss());
 
 // Prevent Http Params Pollution
 app.use(hpp());
+
+// response time header
+app.use(responseTime());
 
 // Use Routes in app
 app.use('/api', apiRoutes);

@@ -32,11 +32,69 @@ async function getMetadata(link) {
   const resourceId = getResourceId(spotifyResourceType, processedLink);
   const cachedMeta = await getLocalMetadata(spotifyResourceType, resourceId);
   if (cachedMeta) {
-    console.log('CACHE HIT');
+    return sendResponseFromLocal(spotifyResourceType, cachedMeta);
   }
   const metadata = await getResourceMetadata(spotifyResourceType, resourceId);
   saveLocalMeta(spotifyResourceType, resourceId, metadata);
-  return metadata;
+  return sendResponseFromSpotify(spotifyResourceType, metadata);
+}
+
+/**
+ *
+ * @param {object} data
+ */
+function sendTrackResponse(data) {
+  return data;
+}
+
+/**
+ *
+ * @param {object} data
+ */
+function sendAlbumResponse(data) {
+  return data;
+}
+
+/**
+ *
+ * @param {object} data
+ */
+function sendPlaylistResponse(data) {
+  return data;
+}
+
+/**
+ *
+ * @param {string} resourceType
+ * @param {object} data
+ */
+function sendResponseFromLocal(resourceType, data) {
+  if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
+    return sendTrackResponse(data);
+  } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
+    return sendAlbumResponse(data);
+  } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
+    return sendPlaylistResponse(data);
+  } else {
+    throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
+  }
+}
+
+/**
+ *
+ * @param {string} resourceType
+ * @param {object} data
+ */
+function sendResponseFromSpotify(resourceType, data) {
+  if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
+    return sendTrackResponse(data);
+  } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
+    return sendAlbumResponse(data);
+  } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
+    return sendPlaylistResponse(data);
+  } else {
+    throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
+  }
 }
 
 /**
@@ -47,9 +105,12 @@ async function getMetadata(link) {
 async function getLocalMetadata(resourceType, resourceId) {
   try {
     if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
-      return await LocalTrack.findOne({ track_id: resourceId }).populate([{ path: 'album' }]);
+      return await LocalTrack.findOne({ track_id: resourceId }).populate([
+        { path: 'album' },
+        { path: 'artists' },
+      ]);
     } else {
-      throw new ErrorMessage(ErrorMessage.service_unavailable, 503);
+      throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
     }
   } catch (e) {
     return null;
@@ -67,7 +128,7 @@ async function saveLocalMeta(resourceType, resourceId, data) {
     if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
       saveTrackMeta(resourceId, null, data);
     } else {
-      throw new ErrorMessage(ErrorMessage.service_unavailable, 503);
+      throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
     }
   } catch (e) {
     return null;
