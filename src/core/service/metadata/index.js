@@ -43,25 +43,167 @@ async function getMetadata(link) {
 /**
  *
  * @param {object} data
+ * @returns
  */
-function sendTrackResponse(data) {
-  return data;
+function sendLocalTrackResponse(data) {
+  const response = {
+    type: SPOTIFY_RESOURCE_TYPE.TRACK,
+    id: data.track_id,
+    name: data.name,
+    duration: data.duration,
+    explicit: data.explicit,
+    preview_url: data.preview_url,
+    popularity: data.popularity,
+    spotify_url: data.spotify_app_url,
+    images: data.album.images,
+    artists: data.artists.map((a) => {
+      return {
+        id: a.artist_id,
+        name: a.name,
+        spotify_url: a.spotify_app_url,
+      };
+    }),
+    album: {
+      id: data.album.album_id,
+      name: data.album.name,
+      spotify_url: data.album.spotify_app_url,
+      release_date: data.album.release_date,
+      images: data.album.images,
+    },
+    music_dl_downloaded: data.music_dl_downloaded,
+    music_dl_hit: data.music_dl_hit,
+    music_dl_download_count: data.music_dl_download_count,
+  };
+  return response;
+}
+
+/**
+ *
+ * @param {data} data
+ */
+function sendSpotifyTrackResponse(data) {
+  const response = {
+    type: SPOTIFY_RESOURCE_TYPE.TRACK,
+    id: data.id,
+    name: data.name,
+    duration: data.duration_ms,
+    explicit: data.explicit,
+    preview_url: data.preview_url,
+    popularity: data.popularity,
+    spotify_url: data.external_urls.spotify,
+    images: data.album.images,
+    artists: data.artists.map((a) => {
+      return {
+        id: a.id,
+        name: a.name,
+        spotify_url: a.external_urls.spotify,
+      };
+    }),
+    album: {
+      id: data.album.id,
+      name: data.album.name,
+      spotify_url: data.album.external_urls.spotify,
+      release_date: data.album.release_date,
+      images: data.album.images,
+    },
+    music_dl_downloaded: false,
+    music_dl_hit: 0,
+    music_dl_download_count: 0,
+  };
+  return response;
 }
 
 /**
  *
  * @param {object} data
+ * @returns
  */
-function sendAlbumResponse(data) {
-  return data;
+function sendLocalAlbumResponse(data) {
+  const response = {
+    type: SPOTIFY_RESOURCE_TYPE.ALBUM,
+    id: data.album_id,
+    copyrights: data.copyrights,
+    genres: data.genres,
+    images: data.images,
+    spotify_url: data.spotify_app_url,
+    label: data.label,
+    name: data.name,
+    popularity: data.popularity,
+    release_date: data.release_date,
+    total_tracks: data.track_count,
+    artists: data.artists.map((a) => {
+      return {
+        id: a.artist_id,
+        name: a.name,
+        spotify_url: a.spotify_app_url,
+      };
+    }),
+    tracks: data.tracks.map((t) => {
+      return {
+        artists: t.artists.map((a) => {
+          return {
+            id: a.artist_id,
+            name: a.name,
+            spotify_url: a.spotify_app_url,
+          };
+        }),
+        id: t.track_id,
+        name: t.name,
+        duration: t.duration,
+        explicit: t.explicit,
+        preview_url: t.preview_url,
+        spotify_url: t.spotify_app_url,
+      };
+    }),
+    music_dl_hit: 0,
+  };
+  return response;
 }
 
 /**
  *
- * @param {object} data
+ * @param {data} data
  */
-function sendPlaylistResponse(data) {
-  return data;
+function sendSpotifyAlbumResponse(data) {
+  const response = {
+    type: SPOTIFY_RESOURCE_TYPE.ALBUM,
+    id: data.id,
+    copyrights: data.copyrights,
+    genres: data.genres,
+    images: data.images,
+    spotify_url: data.external_urls.spotify,
+    label: data.label,
+    name: data.name,
+    popularity: data.popularity,
+    release_date: data.release_date,
+    total_tracks: data.total_tracks,
+    artists: data.artists.map((a) => {
+      return {
+        id: a.id,
+        name: a.name,
+        spotify_url: a.external_urls.spotify,
+      };
+    }),
+    tracks: data.tracks.items.map((t) => {
+      return {
+        artists: t.artists.map((a) => {
+          return {
+            id: a.id,
+            name: a.name,
+            spotify_url: a.external_urls.spotify,
+          };
+        }),
+        id: t.id,
+        name: t.name,
+        duration: t.duration_ms,
+        explicit: t.explicit,
+        preview_url: t.preview_url,
+        spotify_url: t.external_urls.spotify,
+      };
+    }),
+    music_dl_hit: 0,
+  };
+  return response;
 }
 
 /**
@@ -71,37 +213,9 @@ function sendPlaylistResponse(data) {
  */
 function sendResponseFromLocal(resourceType, data) {
   if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
-    const response = {
-      type: resourceType,
-      id: data.track_id,
-      name: data.name,
-      duration: data.duration,
-      explicit: data.explicit,
-      preview_url: data.preview_url,
-      popularity: data.popularity,
-      spotify_url: data.spotify_app_url,
-      images: data.album.images,
-      artists: data.artists.map((a) => {
-        return {
-          id: a.artist_id,
-          name: a.name,
-          spotify_url: a.spotify_app_url,
-        };
-      }),
-      album: {
-        id: data.album.album_id,
-        name: data.album.name,
-        spotify_url: data.album.spotify_app_url,
-        release_date: data.album.release_date,
-        images: data.album.images,
-      },
-      music_dl_downloaded: data.music_dl_downloaded,
-      music_dl_hit: data.music_dl_hit,
-      music_dl_download_count: data.music_dl_download_count,
-    };
-    return response;
+    return sendLocalTrackResponse(data);
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
-    return sendAlbumResponse(data);
+    return sendLocalAlbumResponse(data);
   } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
     return sendPlaylistResponse(data);
   } else {
@@ -116,37 +230,9 @@ function sendResponseFromLocal(resourceType, data) {
  */
 function sendResponseFromSpotify(resourceType, data) {
   if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
-    const response = {
-      type: resourceType,
-      id: data.id,
-      name: data.name,
-      duration: data.duration,
-      explicit: data.explicit,
-      preview_url: data.preview_url,
-      popularity: data.popularity,
-      spotify_url: data.external_urls.spotify,
-      images: data.album.images,
-      artists: data.artists.map((a) => {
-        return {
-          id: a.id,
-          name: a.name,
-          spotify_url: a.external_urls.spotify,
-        };
-      }),
-      album: {
-        id: data.album.id,
-        name: data.album.name,
-        spotify_url: data.album.external_urls.spotify,
-        release_date: data.album.release_date,
-        images: data.album.images,
-      },
-      music_dl_downloaded: false,
-      music_dl_hit: 0,
-      music_dl_download_count: 0,
-    };
-    return response;
+    return sendSpotifyTrackResponse(data);
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
-    return sendAlbumResponse(data);
+    return sendSpotifyAlbumResponse(data);
   } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
     return sendPlaylistResponse(data);
   } else {
@@ -166,6 +252,17 @@ async function getLocalMetadata(resourceType, resourceId) {
         { path: 'album' },
         { path: 'artists' },
       ]);
+    } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
+      const albumDoc = await LocalAlbum.findOne({ album_id: resourceId }).populate({
+        path: 'artists',
+      });
+      if (albumDoc) {
+        const tracks = await LocalTrack.find({ album: albumDoc._id }).populate({ path: 'artists' });
+        const clonedAlbumDoc = Object.assign({}, albumDoc._doc);
+        clonedAlbumDoc.tracks = tracks;
+        return clonedAlbumDoc;
+      }
+      return null;
     } else {
       throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
     }
@@ -184,6 +281,8 @@ async function saveLocalMeta(resourceType, resourceId, data) {
   try {
     if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
       saveTrackMeta(resourceId, null, data);
+    } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
+      saveAlbumMeta(resourceId);
     } else {
       throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
     }
@@ -326,7 +425,10 @@ async function saveAlbumTrackMap(localAlbumId, retryCount) {
     logger.info(`saving artist-track map locally for artist id: [${albumMeta.id}]`);
     const existingLocalAlbumTrackMap = await LocalAlbumTrackMap.find({ album_id: localAlbumId });
     if (albumMeta.tracks.total > existingLocalAlbumTrackMap.length) {
-      const allTracksMeta = await getAlbumTracksMeta(albumDoc.album_id);
+      const allTracksMeta =
+        albumMeta.tracks.total > albumMeta.tracks.limit
+          ? await getAlbumTracksMeta(albumDoc.album_id)
+          : albumMeta.tracks.items;
       const trackPromises = allTracksMeta
         .filter((k) => existingLocalAlbumTrackMap.every((d) => d.track_id !== k))
         .map((i) => saveTrackMeta(i.id, localAlbumId));

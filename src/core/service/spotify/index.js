@@ -126,7 +126,13 @@ async function getResourceMetadata(resourceType, resourceId) {
   if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
     return getTrackMetadata(resourceId);
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
-    return getAlbumMetadata(resourceId);
+    const albumMeta = await getAlbumMetadata(resourceId);
+    if (albumMeta.tracks.total > albumMeta.tracks.limit) {
+      const tracks = await getAlbumTracksMeta(resourceId);
+      albumMeta.tracks.items = tracks;
+      albumMeta.tracks.limit = albumMeta.tracks.total;
+    }
+    return albumMeta;
   } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
     return getPlaylistMetadata(resourceId);
   }
