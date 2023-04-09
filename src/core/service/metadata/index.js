@@ -20,7 +20,7 @@ const LocalArtist = require('../../model/Artist');
 const LocalAlbum = require('../../model/Album');
 const LocalAlbumTrackMap = require('../../model/AlbumTrack');
 const logger = require('../../../../config/logger');
-const MAX_RETRY_FOR_SAVING = 3;
+const { MAX_RETRY: MAX_RETRY_FOR_SAVING } = require('../../../../config/env');
 
 /**
  *
@@ -71,7 +71,38 @@ function sendPlaylistResponse(data) {
  */
 function sendResponseFromLocal(resourceType, data) {
   if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
-    return sendTrackResponse(data);
+    const response = {
+      type: resourceType,
+      id: data.track_id,
+      name: data.name,
+      duration: data.duration,
+      explicit: data.explicit,
+      preview_url: data.preview_url,
+      popularity: data.popularity,
+      spotify_url: data.spotify_app_url,
+      images: data.album.images,
+      artists: data.artists.map((a) => {
+        return {
+          id: a.artist_id,
+          name: a.name,
+          spotify_url: a.spotify_app_url,
+          images: a.images,
+          popularity: a.popularity,
+          genres: a.genres,
+        };
+      }),
+      album: {
+        id: data.album.album_id,
+        name: data.album.name,
+        spotify_url: data.album.spotify_app_url,
+        popularity: data.album.popularity,
+        release_date: data.album.release_date,
+        label: data.album.label,
+        genres: data.album.genres,
+        images: data.album.images,
+      },
+    };
+    return response;
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
     return sendAlbumResponse(data);
   } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
@@ -88,7 +119,38 @@ function sendResponseFromLocal(resourceType, data) {
  */
 function sendResponseFromSpotify(resourceType, data) {
   if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
-    return sendTrackResponse(data);
+    const response = {
+      type: resourceType,
+      id: data.id,
+      name: data.name,
+      duration: data.duration,
+      explicit: data.explicit,
+      preview_url: data.preview_url,
+      popularity: data.popularity,
+      spotify_url: data.external_urls.spotify,
+      images: data.album.images,
+      artists: data.artists.map((a) => {
+        return {
+          id: a.id,
+          name: a.name,
+          spotify_url: a.external_urls.spotify,
+          images: a.images,
+          popularity: a.popularity,
+          genres: a.genres,
+        };
+      }),
+      album: {
+        id: data.album.id,
+        name: data.album.name,
+        spotify_url: data.album.external_urls.spotify,
+        popularity: data.album.popularity,
+        release_date: data.album.release_date,
+        label: data.album.label,
+        genres: data.album.genres,
+        images: data.album.images,
+      },
+    };
+    return response;
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
     return sendAlbumResponse(data);
   } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
