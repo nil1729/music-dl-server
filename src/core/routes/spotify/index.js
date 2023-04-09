@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-router.use('/spotify', require('./spotify'));
+router.use('/metadata', require('./meta'));
 
 module.exports = router;

@@ -1,11 +1,12 @@
 const logger = require('../logger');
 const mongoose = require('mongoose');
 mongoose.set('strictQuery', true);
+const { MUSIC_DL_PRIMARY_DB } = require('../env');
 
 const connect = () => {
   return new Promise((resolve, reject) => {
     mongoose
-      .connect(process.env.MUSIC_DL_PRIMARY_DB, {
+      .connect(MUSIC_DL_PRIMARY_DB, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
       })

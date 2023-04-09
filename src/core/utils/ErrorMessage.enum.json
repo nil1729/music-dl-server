@@ -1,0 +1,10 @@
+{
+  "service_unavailable": "requested service not available right now",
+  "internal_server_error": "something went wrong",
+  "not_found": "requested resource not found on our records",
+  "session_expired": "session expired! please login again",
+  "unauthorized": "you are not authorized to access this resource",
+  "invalid_url": "provided url is not valid or not supported",
+  "link_processing_failed": "link processing failed due to internal error",
+  "unsupported_resource": "unsupported resource type provided for processing"
+}

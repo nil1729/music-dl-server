@@ -7,7 +7,8 @@ const apiRoutes = require('./routes');
 const errorHandler = require('./middleware/request/errorHandler');
 const connectDatabase = require('../../config/db');
 const logger = require('../../config/logger');
-const { PORT, NODE_ENV } = require('./env');
+const { CORE_SERVICE_PORT: PORT, NODE_ENV } = require('../../config/env');
+const { initAccessTokenReloader } = require('../../config/spotify');
 
 // Initialize App
 const app = express();
@@ -37,6 +38,7 @@ app.use(errorHandler);
 app.listen(PORT, async () => {
   await connectDatabase();
   logger.info(`core service running in ${NODE_ENV} mode on port ${PORT}`);
+  initAccessTokenReloader();
 });
 
 module.exports = app;
