@@ -8,13 +8,15 @@ const {
   getProcessedSpotifyLink,
   getSpotifyResourceType,
   getResourceMetadata,
+  getResourceId,
 } = require('../spotify');
 
 async function getMetadata(link) {
   const processedLink = await getProcessedSpotifyLink(link);
   const spotifyResourceType = getSpotifyResourceType(processedLink);
-  const metadata = await getResourceMetadata(spotifyResourceType, processedLink);
-  return spotifyResourceType;
+  const resourceId = getResourceId(spotifyResourceType, processedLink);
+  const metadata = await getResourceMetadata(spotifyResourceType, resourceId);
+  return metadata;
 }
 
 module.exports = { getMetadata };

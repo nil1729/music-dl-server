@@ -14,11 +14,28 @@ const extractUrls = require('extract-urls');
 
 async function getTrackMetadata(trackId) {
   try {
-    const track = await getSpotifyApiClient().getTrack(trackId);
-    console.dir(track, null);
-    return track.body;
-  } catch (error) {
-    console.log(error);
+    const response = await getSpotifyApiClient().getTrack(trackId);
+    return response.body;
+  } catch (e) {
+    throw new ErrorMessage(ErrorMessage.link_processing_failed, 503);
+  }
+}
+
+async function getAlbumMetadata(albumId) {
+  try {
+    const response = await getSpotifyApiClient().getAlbum(albumId);
+    return response.body;
+  } catch (e) {
+    throw new ErrorMessage(ErrorMessage.link_processing_failed, 503);
+  }
+}
+
+async function getPlaylistMetadata(playlistId) {
+  try {
+    const response = await getSpotifyApiClient().getPlaylist(playlistId);
+    return response.body;
+  } catch (e) {
+    throw new ErrorMessage(ErrorMessage.link_processing_failed, 503);
   }
 }
 
@@ -68,12 +85,13 @@ function getSpotifyResourceType(standardLink) {
  * @param {string} resourceType
  * @param {string} url
  */
-async function getResourceMetadata(resourceType, url) {
-  const resourceId = getResourceId(resourceType, url);
+async function getResourceMetadata(resourceType, resourceId) {
   if (SPOTIFY_RESOURCE_TYPE.TRACK === resourceType) {
-    const metadata = await getTrackMetadata(resourceId);
+    return getTrackMetadata(resourceId);
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
+    return getAlbumMetadata(resourceId);
   } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
+    return getPlaylistMetadata(resourceId);
   }
   return null;
 }
@@ -94,4 +112,9 @@ function getResourceId(resourceType, url) {
   return resourceId;
 }
 
-module.exports = { getProcessedSpotifyLink, getResourceMetadata, getSpotifyResourceType };
+module.exports = {
+  getProcessedSpotifyLink,
+  getResourceMetadata,
+  getSpotifyResourceType,
+  getResourceId,
+};
