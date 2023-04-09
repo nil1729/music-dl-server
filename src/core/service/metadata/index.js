@@ -86,21 +86,18 @@ function sendResponseFromLocal(resourceType, data) {
           id: a.artist_id,
           name: a.name,
           spotify_url: a.spotify_app_url,
-          images: a.images,
-          popularity: a.popularity,
-          genres: a.genres,
         };
       }),
       album: {
         id: data.album.album_id,
         name: data.album.name,
         spotify_url: data.album.spotify_app_url,
-        popularity: data.album.popularity,
         release_date: data.album.release_date,
-        label: data.album.label,
-        genres: data.album.genres,
         images: data.album.images,
       },
+      music_dl_downloaded: data.music_dl_downloaded,
+      music_dl_hit: data.music_dl_hit,
+      music_dl_download_count: data.music_dl_download_count,
     };
     return response;
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
@@ -134,21 +131,18 @@ function sendResponseFromSpotify(resourceType, data) {
           id: a.id,
           name: a.name,
           spotify_url: a.external_urls.spotify,
-          images: a.images,
-          popularity: a.popularity,
-          genres: a.genres,
         };
       }),
       album: {
         id: data.album.id,
         name: data.album.name,
         spotify_url: data.album.external_urls.spotify,
-        popularity: data.album.popularity,
         release_date: data.album.release_date,
-        label: data.album.label,
-        genres: data.album.genres,
         images: data.album.images,
       },
+      music_dl_downloaded: false,
+      music_dl_hit: 0,
+      music_dl_download_count: 0,
     };
     return response;
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {

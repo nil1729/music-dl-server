@@ -10,7 +10,7 @@ const {
 const ErrorResponse = require('../../utils/ErrorResponse.class');
 const ErrorMessage = require('../../utils/ErrorMessage.enum.json');
 const validator = require('validator');
-const { getAxiosResponse } = require('../../utils/Axios');
+const { getAxiosResponse } = require('../../../../config/axios');
 const extractUrls = require('extract-urls');
 const logger = require('../../../../config/logger');
 
