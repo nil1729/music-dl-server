@@ -13,7 +13,11 @@ const ArtistSchema = new Schema(
       type: Types.String,
       required: true,
     },
-    spotify_url: {
+    spotify_api_url: {
+      type: Types.String,
+      required: true,
+    },
+    spotify_app_url: {
       type: Types.String,
       required: true,
     },

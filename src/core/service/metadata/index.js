@@ -14,12 +14,13 @@ const {
   getAlbumTracksMeta,
   getTrackMetadata,
 } = require('../spotify');
-const { SPOTIFY_RESOURCE_TYPE } = require('../../../../config/spotify/config');
+const { SPOTIFY_RESOURCE_TYPE } = require('../../../../config/spotify/constant');
 const LocalTrack = require('../../model/Track');
 const LocalArtist = require('../../model/Artist');
 const LocalAlbum = require('../../model/Album');
 const LocalAlbumTrackMap = require('../../model/AlbumTrack');
 const logger = require('../../../../config/logger');
+const MAX_RETRY_FOR_SAVING = 3;
 
 /**
  *
@@ -156,7 +157,8 @@ async function saveTrackMeta(trackId, localAlbumId = null, data = {}) {
         const trackDoc = {
           track_id: trackMeta.id,
           name: trackMeta.name,
-          spotify_url: trackMeta.href,
+          spotify_api_url: trackMeta.href,
+          spotify_app_url: trackMeta.external_urls.spotify,
           album: localAlbumId,
           artists: artistIdMapArray,
           duration: trackMeta.duration_ms,
@@ -189,7 +191,7 @@ async function saveAlbumMeta(albumId, populated = false, data = {}) {
     try {
       const existingDoc = await LocalAlbum.findOne({ album_id: albumId }, { _id: 1 });
       if (existingDoc) {
-        saveAlbumTrackMap(existingDoc._id.toString());
+        saveAlbumTrackMap(existingDoc._id.toString(), 0);
         return resolve(existingDoc._id.toString());
       }
       const albumMeta = populated ? data : await getAlbumMetadata(albumId);
@@ -198,7 +200,8 @@ async function saveAlbumMeta(albumId, populated = false, data = {}) {
       const albumDoc = {
         album_id: albumMeta.id,
         name: albumMeta.name,
-        spotify_url: albumMeta.href,
+        spotify_api_url: albumMeta.href,
+        spotify_app_url: albumMeta.external_urls.spotify,
         popularity: albumMeta.popularity,
         release_date: albumMeta.release_date,
         label: albumMeta.label,
@@ -209,7 +212,7 @@ async function saveAlbumMeta(albumId, populated = false, data = {}) {
         track_count: albumMeta.tracks.total,
       };
       const savedDoc = await LocalAlbum.create(albumDoc);
-      saveAlbumTrackMap(savedDoc.id);
+      saveAlbumTrackMap(savedDoc.id, 0);
       resolve(savedDoc.id);
     } catch (e) {
       reject(e);
@@ -235,7 +238,8 @@ async function saveArtistMeta(artistId) {
       const artistDoc = {
         artist_id: artistMeta.id,
         name: artistMeta.name,
-        spotify_url: artistMeta.href,
+        spotify_app_url: artistMeta.external_urls.spotify,
+        spotify_api_url: artistMeta.href,
         genres: artistMeta.genres,
         images: artistMeta.images,
         popularity: artistMeta.popularity,
@@ -252,28 +256,37 @@ async function saveArtistMeta(artistId) {
  *
  * @param {string} albumId
  */
-async function saveAlbumTrackMap(localAlbumId) {
-  const albumDoc = await LocalAlbum.findById(localAlbumId);
-  if (!albumDoc) {
-    throw new Error(ErrorMessage.processing_failed);
+async function saveAlbumTrackMap(localAlbumId, retryCount) {
+  if (retryCount > MAX_RETRY_FOR_SAVING) {
+    logger.warn('max retry count exceeded for saving album track map');
+    return;
   }
-  const albumMeta = await getAlbumMetadata(albumDoc.album_id);
-  logger.info(`saving artist-track map locally for artist id: [${albumMeta.id}]`);
-  const existingLocalAlbumTrackMap = await LocalAlbumTrackMap.find({ album_id: localAlbumId });
-  if (albumMeta.tracks.total > existingLocalAlbumTrackMap.length) {
-    const allTracksMeta = await getAlbumTracksMeta(albumDoc.album_id);
-    const trackPromises = allTracksMeta
-      .filter((k) => existingLocalAlbumTrackMap.every((d) => d.track_id !== k))
-      .map((i) => saveTrackMeta(i.id, localAlbumId));
-    const trackId = await Promise.all(trackPromises);
-    const albumTrackMapDocs = trackId.map((i) => {
-      return {
-        track_id: i,
-        album_id: localAlbumId,
-      };
-    });
-    const savedDocs = await LocalAlbumTrackMap.insertMany(albumTrackMapDocs);
-    logger.info(`saved artist-track map locally | total count: [${savedDocs.length}]`);
+  try {
+    const albumDoc = await LocalAlbum.findById(localAlbumId);
+    if (!albumDoc) {
+      throw new Error(ErrorMessage.processing_failed);
+    }
+    const albumMeta = await getAlbumMetadata(albumDoc.album_id);
+    logger.info(`saving artist-track map locally for artist id: [${albumMeta.id}]`);
+    const existingLocalAlbumTrackMap = await LocalAlbumTrackMap.find({ album_id: localAlbumId });
+    if (albumMeta.tracks.total > existingLocalAlbumTrackMap.length) {
+      const allTracksMeta = await getAlbumTracksMeta(albumDoc.album_id);
+      const trackPromises = allTracksMeta
+        .filter((k) => existingLocalAlbumTrackMap.every((d) => d.track_id !== k))
+        .map((i) => saveTrackMeta(i.id, localAlbumId));
+      const trackId = await Promise.all(trackPromises);
+      const albumTrackMapDocs = trackId.map((i) => {
+        return {
+          track_id: i,
+          album_id: localAlbumId,
+        };
+      });
+      const savedDocs = await LocalAlbumTrackMap.insertMany(albumTrackMapDocs);
+      logger.info(`saved artist-track map locally | total count: [${savedDocs.length}]`);
+    }
+  } catch (e) {
+    logger.error(e.message);
+    return saveAlbumTrackMap(localAlbumId, retryCount + 1);
   }
 }
 

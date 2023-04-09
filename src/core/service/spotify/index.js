@@ -6,7 +6,7 @@ const {
   SPOTIFY_STANDARD_LINK_DOMAIN,
   SPOTIFY_RESOURCE_TYPE,
   SPOTIFY_TRACK_FETCH_LIMIT,
-} = require('../../../../config/spotify/config');
+} = require('../../../../config/spotify/constant');
 const ErrorResponse = require('../../utils/ErrorResponse.class');
 const ErrorMessage = require('../../utils/ErrorMessage.enum.json');
 const validator = require('validator');
