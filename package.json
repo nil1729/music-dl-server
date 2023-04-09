@@ -1,0 +1,32 @@
+{
+  "name": "music-dl-server",
+  "version": "1.0.0",
+  "description": "backend for music dl app",
+  "main": "index.js",
+  "scripts": {
+    "core": "node src/core/app.js",
+    "core:dev": "nodemon --trace-warnings src/core/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nil1729/music-dl-server.git"
+  },
+  "keywords": [
+    "music-dl"
+  ],
+  "author": "Nilanjan Deb",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nil1729/music-dl-server/issues"
+  },
+  "homepage": "https://github.com/nil1729/music-dl-server#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "hpp": "^0.2.3",
+    "mongoose": "^7.0.3",
+    "morgan": "^1.10.0",
+    "winston": "^3.8.2",
+    "xss-clean": "^0.1.1"
+  }
+}
