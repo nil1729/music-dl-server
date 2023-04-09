@@ -6,5 +6,6 @@
   "unauthorized": "you are not authorized to access this resource",
   "invalid_url": "provided url is not valid or not supported",
   "link_processing_failed": "link processing failed due to internal error",
-  "unsupported_resource": "unsupported resource type provided for processing"
+  "unsupported_resource": "unsupported resource type provided for processing",
+  "processing_failed": "processing failed due to internal error or invalid resource"
 }

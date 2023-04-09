@@ -7,3 +7,4 @@ exports.SPOTIFY_RESOURCE_TYPE = {
   SHOW: 'show',
   EPISODE: 'episode',
 };
+exports.SPOTIFY_TRACK_FETCH_LIMIT = 50;

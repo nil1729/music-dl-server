@@ -79,7 +79,7 @@ async function saveAccessToken(requestType) {
     const currentTime = new Date();
     const response = await getAccessTokenFromSpotify();
     const expirationTime = new Date(
-      currentTime.setHours(currentTime.getMinutes() + 45)
+      currentTime.setMinutes(currentTime.getMinutes() + 45)
     ).toISOString();
     const accessTokenJson = {
       token: response.access_token,

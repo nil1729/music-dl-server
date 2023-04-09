@@ -5,37 +5,74 @@ const {
   SPOTIFY_SHORT_LINK_DOMAIN,
   SPOTIFY_STANDARD_LINK_DOMAIN,
   SPOTIFY_RESOURCE_TYPE,
+  SPOTIFY_TRACK_FETCH_LIMIT,
 } = require('../../../../config/spotify/config');
 const ErrorResponse = require('../../utils/ErrorResponse.class');
 const ErrorMessage = require('../../utils/ErrorMessage.enum.json');
 const validator = require('validator');
 const { getAxiosResponse } = require('../../utils/Axios');
 const extractUrls = require('extract-urls');
+const logger = require('../../../../config/logger');
 
 async function getTrackMetadata(trackId) {
   try {
+    logger.info(`getting track metadata of track id: [${trackId}]`);
     const response = await getSpotifyApiClient().getTrack(trackId);
     return response.body;
   } catch (e) {
-    throw new ErrorMessage(ErrorMessage.link_processing_failed, 503);
+    console.log(e);
+    throw new ErrorResponse(ErrorMessage.link_processing_failed, 506);
   }
 }
 
 async function getAlbumMetadata(albumId) {
   try {
+    logger.info(`getting album metadata of album id: [${albumId}]`);
     const response = await getSpotifyApiClient().getAlbum(albumId);
     return response.body;
   } catch (e) {
-    throw new ErrorMessage(ErrorMessage.link_processing_failed, 503);
+    throw new ErrorResponse(ErrorMessage.link_processing_failed, 506);
+  }
+}
+
+async function getAlbumTracksMeta(albumId, totalCount) {
+  try {
+    logger.info(`getting album tracks metadata of album id: [${albumId}]`);
+    let offset = 0;
+    let iterationCount = Math.ceil(totalCount / SPOTIFY_TRACK_FETCH_LIMIT);
+    const tracks = [];
+    do {
+      const response = await getSpotifyApiClient().getAlbumTracks(albumId, {
+        offset: offset,
+        limit: SPOTIFY_TRACK_FETCH_LIMIT,
+      });
+      tracks.push(...response.body.items);
+      iterationCount--;
+      offset += SPOTIFY_TRACK_FETCH_LIMIT;
+    } while (iterationCount > 0);
+    return tracks;
+  } catch (e) {
+    throw new ErrorResponse(ErrorMessage.link_processing_failed, 506);
   }
 }
 
 async function getPlaylistMetadata(playlistId) {
   try {
+    logger.info(`getting playlist metadata of playlist id: [${playlistId}]`);
     const response = await getSpotifyApiClient().getPlaylist(playlistId);
     return response.body;
   } catch (e) {
-    throw new ErrorMessage(ErrorMessage.link_processing_failed, 503);
+    throw new ErrorResponse(ErrorMessage.link_processing_failed, 506);
+  }
+}
+
+async function getArtistMetadata(artistId) {
+  try {
+    logger.info(`getting artist metadata of artist id: [${artistId}]`);
+    const response = await getSpotifyApiClient().getArtist(artistId);
+    return response.body;
+  } catch (e) {
+    throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
   }
 }
 
@@ -62,7 +99,7 @@ async function getStandardLink(shortLink) {
   const embeddedUrls = extractUrls(responseText);
   const queryFreeLinks = embeddedUrls.map((t) => removeQueryStringAndHash(t));
   const standardLinks = queryFreeLinks.filter((t) => t.includes(SPOTIFY_STANDARD_LINK_DOMAIN));
-  if (standardLinks.length === 0) throw new ErrorResponse(ErrorMessage.link_processing_failed, 503);
+  if (standardLinks.length === 0) throw new ErrorResponse(ErrorMessage.link_processing_failed, 506);
   return standardLinks[0];
 }
 
@@ -117,4 +154,8 @@ module.exports = {
   getResourceMetadata,
   getSpotifyResourceType,
   getResourceId,
+  getArtistMetadata,
+  getAlbumMetadata,
+  getAlbumTracksMeta,
+  getTrackMetadata,
 };
