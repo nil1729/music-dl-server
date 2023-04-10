@@ -13,6 +13,6 @@ const { getTrackCDN } = require('../../service/downloader');
  */
 exports.trackDownloadHandler = asyncHandler(async (req, res, next) => {
   const { trackId } = req.params;
-  const response = await getTrackCDN(trackId);
-  return res.status(200).json(response);
+  const downloadCdn = await getTrackCDN(trackId);
+  return res.status(200).json({ download_cdn: downloadCdn });
 });

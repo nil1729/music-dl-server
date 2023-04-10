@@ -71,6 +71,7 @@ function sendLocalTrackResponse(data) {
       images: data.album.images,
     },
     music_dl_downloaded: data.music_dl_downloaded,
+    music_dl_cdn: data.music_dl_cdn,
     music_dl_hit: data.music_dl_hit,
     music_dl_download_count: data.music_dl_download_count,
   };
@@ -107,6 +108,7 @@ function sendSpotifyTrackResponse(data) {
       images: data.album.images,
     },
     music_dl_downloaded: false,
+    music_dl_cdn: null,
     music_dl_hit: 0,
     music_dl_download_count: 0,
   };

@@ -1,33 +1,20 @@
 /*jshint esversion: 11 */
 
 const ErrorResponse = require('../../utils/ErrorResponse.class');
-const SuccessResponse = require('../../utils/SuccessResponse.class');
 const ErrorMessage = require('../../utils/ErrorMessage.enum.json');
-const validator = require('validator');
-const {
-  getProcessedSpotifyLink,
-  getSpotifyResourceType,
-  getResourceMetadata,
-  getResourceId,
-  getArtistMetadata,
-  getAlbumMetadata,
-  getAlbumTracksMeta,
-  getTrackMetadata,
-} = require('../spotify');
 const { SPOTIFY_RESOURCE_TYPE } = require('../../../../config/spotify/constant');
 const LocalTrack = require('../../model/Track');
-const LocalArtist = require('../../model/Artist');
-const LocalAlbum = require('../../model/Album');
-const LocalAlbumTrackMap = require('../../model/AlbumTrack');
 const logger = require('../../../../config/logger');
-const { MAX_RETRY: MAX_RETRY_FOR_SAVING } = require('../../../../config/env');
+const { MAX_RETRY: MAX_RETRY_FOR_SAVING, MUSIC_DL_CDN_HOST } = require('../../../../config/env');
 const { getLocalMetadata } = require('../metadata');
 const {
   getYtSearchResults,
   getYtMp4Cdn,
   downloadFromUrl,
   convertMp4ToMp3,
+  uploadToMusicDlStorage,
 } = require('../../../downloader');
+const Path = require('path');
 
 /**
  *
@@ -59,10 +46,14 @@ async function downloadAndSendCDN(track) {
   }
   const mp4FilePath = await downloadFromUrl(mp4CDN, '.mp4');
   if (!mp4FilePath) {
-    logger.warn(`mp4 download failed track [${track.track_id}] and YT [${results[0].url}]`);
+    logger.warn(`mp4 download failed for track [${track.track_id}] and YT [${results[0].url}]`);
     throw new ErrorResponse(ErrorMessage.processing_failed);
   }
   const mp3FilePath = await convertMp4ToMp3(mp4FilePath);
+  if (!mp3FilePath) {
+    logger.warn(`mp3 conversion failed for track [${track.track_id}] and YT [${results[0].url}]`);
+    throw new ErrorResponse(ErrorMessage.processing_failed);
+  }
   saveMp3File(track, mp3FilePath);
   return buildLocalDownloadUrl(mp3FilePath);
 }
@@ -72,8 +63,40 @@ async function downloadAndSendCDN(track) {
  * @param {object} track
  * @param {string} filePath
  */
-function saveMp3File(track, filePath) {}
+async function saveMp3File(track, filePath, retryCount = MAX_RETRY_FOR_SAVING) {
+  if (retryCount > MAX_RETRY_FOR_SAVING) {
+    logger.warn(
+      `max retry count exceeded for uploading mp3 for track [${track.track_id}] | file location: [${filePath}]`
+    );
+    return;
+  }
+  try {
+    logger.info(`saving mp3 file for track [${track.track_id}] at location [${filePath}]`);
+    const { cdnUrl, apiUrl, viewUrl, fileId } = await uploadToMusicDlStorage(
+      track.track_id,
+      filePath
+    );
+    const updatedDoc = {
+      music_dl_downloaded: true,
+      music_dl_cdn: cdnUrl,
+      music_dl_storage_meta: {
+        view_url: viewUrl,
+        api_url: apiUrl,
+        local_id: fileId,
+      },
+    };
+    await LocalTrack.updateOne({ _id: track._id }, { $set: updatedDoc });
+  } catch (e) {
+    logger.info(
+      `failed to upload mp3 for track [${track.track_id}] | file location: [${filePath}]`
+    );
+    saveMp3File(track, filePath, retryCount + 1);
+  }
+}
 
-function buildLocalDownloadUrl(filePath) {}
+function buildLocalDownloadUrl(filePath) {
+  const fileName = Path.basename(filePath);
+  return `${MUSIC_DL_CDN_HOST}/media/${fileName}`;
+}
 
 module.exports = { getTrackCDN };

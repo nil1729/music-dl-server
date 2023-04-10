@@ -59,6 +59,11 @@ const TrackSchema = new Schema(
     music_dl_cdn: {
       type: Types.String,
     },
+    music_dl_storage_meta: {
+      view_url: { type: Types.String },
+      api_url: { type: Types.String },
+      local_id: { type: Types.String },
+    },
     music_dl_hit: {
       type: Types.Number,
       required: true,

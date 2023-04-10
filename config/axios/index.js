@@ -26,6 +26,30 @@ async function sendAxiosRequest(url, requestBody, timeout = MAX_API_TIMEOUT) {
   }
 }
 
+async function sendCustomAxiosRequest(
+  method,
+  url,
+  requestBody,
+  headers = {},
+  timeout = MAX_API_TIMEOUT
+) {
+  try {
+    const config = {
+      method: method,
+      maxBodyLength: Infinity,
+      url: url,
+      headers: headers,
+      data: JSON.stringify(requestBody),
+      timeout: timeout,
+    };
+    const response = await Axios.request(config);
+    return response.data;
+  } catch (e) {
+    // TODO: handle the error
+    console.log(e);
+  }
+}
+
 async function getAuthenticatedResponse(url, token, timeout = MAX_API_TIMEOUT) {
   try {
     const response = await Axios.get(url, {
@@ -41,4 +65,9 @@ async function getAuthenticatedResponse(url, token, timeout = MAX_API_TIMEOUT) {
   }
 }
 
-module.exports = { getAxiosResponse, getAuthenticatedResponse, sendAxiosRequest };
+module.exports = {
+  getAxiosResponse,
+  getAuthenticatedResponse,
+  sendAxiosRequest,
+  sendCustomAxiosRequest,
+};
