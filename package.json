@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "core": "node src/core/app.js",
-    "core:dev": "nodemon --trace-warnings src/core/app.js"
+    "core:dev": "nodemon --trace-warnings src/core/app.js",
+    "start": "npm run core"
   },
   "repository": {
     "type": "git",
