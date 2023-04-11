@@ -21,8 +21,8 @@ async function sendAxiosRequest(url, requestBody, timeout = MAX_API_TIMEOUT) {
     const response = await Axios.post(url, requestBody, { timeout: timeout });
     return response.data;
   } catch (e) {
-    // TODO: handle the error
-    console.log(e);
+    console.debug(e);
+    throw new Error(e.message);
   }
 }
 
@@ -46,7 +46,8 @@ async function sendCustomAxiosRequest(
     return response.data;
   } catch (e) {
     // TODO: handle the error
-    console.log(e);
+    console.debug(e);
+    throw new Error(e.message);
   }
 }
 

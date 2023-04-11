@@ -10,6 +10,7 @@ const {
   DOWNLOAD_PATH_MP3,
   DOWNLOAD_PATH_MP4,
   DEV_ENV,
+  MUSIC_DL_YT_DOWNLOADER_URL,
 } = require('../../config/env');
 const Path = require('path');
 const Axios = require('axios');
@@ -45,16 +46,21 @@ async function getYtSearchResults(searchKeyword, maxDurationMs = MUSIC_MAX_DURAT
  * @param {string} ytUrl
  */
 async function getYtMp4Cdn(ytUrl) {
-  logger.info(`searching mp4 cdn for yt video: [${ytUrl}]`);
-  const data = await sendAxiosRequest(YT_MP4_CONVERTER_URL, { url: ytUrl });
-  const mp4Cdn = data.url
-    .filter((u) => !u.no_audio)
-    .filter((u) => {
-      const cdnUrl = new URL(u.url);
-      return cdnUrl.host.includes(YT_GOOGLE_CDN_TOKEN);
-    })
-    .find((u) => (u.qualityNumber = YT_MP4_QUALITY))?.url;
-  return mp4Cdn;
+  try {
+    logger.info(`searching mp4 cdn for yt video: [${ytUrl}]`);
+    const data = await sendAxiosRequest(YT_MP4_CONVERTER_URL, { url: ytUrl });
+    const mp4Cdn = data.url
+      .filter((u) => !u.no_audio)
+      .filter((u) => {
+        const cdnUrl = new URL(u.url);
+        return cdnUrl.host.includes(YT_GOOGLE_CDN_TOKEN);
+      })
+      .find((u) => (u.qualityNumber = YT_MP4_QUALITY))?.url;
+    return mp4Cdn;
+  } catch (e) {
+    logger.error(`failed to load mp4 cdn for yt: [${ytUrl}]`);
+    return null;
+  }
 }
 
 /**
@@ -66,15 +72,20 @@ async function downloadFromUrl(url, ext) {
   logger.info(`downloading mp4 from cdn: [${url}]`);
   const downloadPath = getFilePath(ext);
   return new Promise(async function (resolve, reject) {
-    const response = await Axios.get(url, { responseType: 'stream' });
-    const fsWriter = fs.createWriteStream(downloadPath);
-    response.data.pipe(fsWriter);
-    fsWriter.on('finish', function () {
-      resolve(downloadPath);
-    });
-    fsWriter.on('error', function () {
+    try {
+      const response = await Axios.get(url, { responseType: 'stream' });
+      const fsWriter = fs.createWriteStream(downloadPath);
+      response.data.pipe(fsWriter);
+      fsWriter.on('finish', function () {
+        resolve(downloadPath);
+      });
+      fsWriter.on('error', function () {
+        resolve(null);
+      });
+    } catch (e) {
+      logger.error(`failed to download mp4 from cdn : [${url}]`);
       resolve(null);
-    });
+    }
   });
 }
 
@@ -97,6 +108,21 @@ async function convertMp4ToMp3(mp4File) {
         resolve(null);
       });
   });
+}
+
+/**
+ *
+ * @param {string} ytUrl
+ */
+async function getYtAudioByMusicDlConverter(ytUrl) {
+  try {
+    logger.info(`downloading mp3 of yt: [${ytUrl}]`);
+    const data = await sendAxiosRequest(MUSIC_DL_YT_DOWNLOADER_URL, { url: ytUrl });
+    return data.file_name;
+  } catch (e) {
+    logger.error(`failed to download mp3 for yt: [${ytUrl}]`);
+    return null;
+  }
 }
 
 function getRandomFileName(ext) {
@@ -132,4 +158,5 @@ module.exports = {
   downloadFromUrl,
   convertMp4ToMp3,
   uploadToMusicDlStorage,
+  getYtAudioByMusicDlConverter,
 };
