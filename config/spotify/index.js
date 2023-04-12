@@ -1,10 +1,9 @@
 /*jshint esversion: 11 */
 
-const SpotifyWebApi = require('spotify-web-api-node');
+const SpotifyWebApi = require('./MusicDlSpotifyApi');
 const {
   SPOTIFY_CLIENT_ID,
   SPOTIFY_CLIENT_SECRET,
-  SPOTIFY_REDIRECT_URI,
   SPOTIFY_ACCESS_TOKEN_URL,
   TMP_DIRECTORY_PATH,
   SPOTIFY_ACCESS_TOKEN_FILE,
@@ -17,14 +16,8 @@ const fs = require('fs');
 const path = require('path');
 
 function getSpotifyApiClient() {
-  const SpotifyApi = new SpotifyWebApi({
-    clientId: SPOTIFY_CLIENT_ID,
-    clientSecret: SPOTIFY_CLIENT_SECRET,
-    redirectUri: SPOTIFY_REDIRECT_URI,
-  });
   const accessToken = getAccessToken();
-  SpotifyApi.setAccessToken(accessToken);
-  return SpotifyApi;
+  return new SpotifyWebApi(accessToken);
 }
 
 function getAccessToken() {
