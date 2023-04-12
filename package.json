@@ -33,6 +33,7 @@
     "mongoose": "^7.0.3",
     "morgan": "^1.10.0",
     "querystring": "^0.2.1",
+    "redis": "^4.6.5",
     "response-time": "^2.3.2",
     "validator": "^13.9.0",
     "winston": "^3.8.2",
