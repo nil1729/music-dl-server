@@ -13,6 +13,7 @@ const validator = require('validator');
 const { getAxiosResponse } = require('../../../../config/axios');
 const extractUrls = require('extract-urls');
 const logger = require('../../../../config/logger');
+const { MAX_TRACK_ALLOWED_FOR_PLAYLIST } = require('../../../../config/env');
 
 async function getTrackMetadata(trackId) {
   try {
@@ -35,13 +36,16 @@ async function getAlbumMetadata(albumId) {
   }
 }
 
-async function getAlbumTracksMeta(albumId, totalCount) {
+async function getAlbumTracksMeta(albumId, totalCount, startOffset = 0) {
   try {
     logger.info(`getting album tracks metadata of album id: [${albumId}]`);
-    let offset = 0;
-    let iterationCount = Math.ceil(totalCount / SPOTIFY_TRACK_FETCH_LIMIT);
+    let offset = startOffset;
+    let iterationCount = Math.ceil((totalCount - offset) / SPOTIFY_TRACK_FETCH_LIMIT);
     const tracks = [];
     do {
+      logger.info(
+        `getting album tracks metadata of album id: [${albumId}] | iteration: [${iterationCount}]`
+      );
       const response = await getSpotifyApiClient().getAlbumTracks(albumId, {
         offset: offset,
         limit: SPOTIFY_TRACK_FETCH_LIMIT,
@@ -66,6 +70,30 @@ async function getPlaylistMetadata(playlistId) {
   }
 }
 
+async function getPlaylistTracksMeta(playlistId, totalCount, startOffset = 0) {
+  try {
+    logger.info(`getting playlist tracks metadata of playlist id: [${playlistId}]`);
+    let offset = startOffset;
+    let iterationCount = Math.ceil((totalCount - offset) / SPOTIFY_TRACK_FETCH_LIMIT);
+    const tracks = [];
+    do {
+      logger.info(
+        `getting playlist tracks metadata of playlist id: [${playlistId}] | iteration: [${iterationCount}]`
+      );
+      const response = await getSpotifyApiClient().getPlaylistTracks(playlistId, {
+        offset: offset,
+        limit: SPOTIFY_TRACK_FETCH_LIMIT,
+      });
+      tracks.push(...response.body.items);
+      iterationCount--;
+      offset += SPOTIFY_TRACK_FETCH_LIMIT;
+    } while (iterationCount > 0);
+    return tracks;
+  } catch (e) {
+    throw new ErrorResponse(ErrorMessage.link_processing_failed, 506);
+  }
+}
+
 async function getArtistMetadata(artistId) {
   try {
     logger.info(`getting artist metadata of artist id: [${artistId}]`);
@@ -82,6 +110,7 @@ async function getArtistMetadata(artistId) {
  * @returns
  */
 async function getProcessedSpotifyLink(url) {
+  logger.info(`processing spotify link [${url}]`);
   if (validator.isURL(url, { host_whitelist: [SPOTIFY_SHORT_LINK_DOMAIN] })) {
     return getStandardLink(url);
   } else if (validator.isURL(url, { host_whitelist: [SPOTIFY_STANDARD_LINK_DOMAIN] })) {
@@ -95,6 +124,7 @@ async function getProcessedSpotifyLink(url) {
  * @param {string} shortLink
  */
 async function getStandardLink(shortLink) {
+  logger.info(`finding standard spotify url for short link [${shortLink}]`);
   const responseText = await getAxiosResponse(shortLink, 'text', 100000);
   const embeddedUrls = extractUrls(responseText);
   const queryFreeLinks = embeddedUrls.map((t) => removeQueryStringAndHash(t));
@@ -128,13 +158,31 @@ async function getResourceMetadata(resourceType, resourceId) {
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
     const albumMeta = await getAlbumMetadata(resourceId);
     if (albumMeta.tracks.total > albumMeta.tracks.limit) {
-      const tracks = await getAlbumTracksMeta(resourceId);
-      albumMeta.tracks.items = tracks;
+      const remainingTracks = await getAlbumTracksMeta(
+        resourceId,
+        albumMeta.tracks.total,
+        albumMeta.tracks.limit
+      );
+      albumMeta.tracks.items = albumMeta.tracks.items.concat(remainingTracks);
       albumMeta.tracks.limit = albumMeta.tracks.total;
     }
     return albumMeta;
   } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
-    return getPlaylistMetadata(resourceId);
+    const playlistMeta = await getPlaylistMetadata(resourceId);
+    if (playlistMeta.tracks.total > playlistMeta.tracks.limit) {
+      const totalCount =
+        playlistMeta.tracks.total > MAX_TRACK_ALLOWED_FOR_PLAYLIST
+          ? MAX_TRACK_ALLOWED_FOR_PLAYLIST
+          : playlistMeta.tracks.total;
+      const remainingTracks = await getPlaylistTracksMeta(
+        resourceId,
+        totalCount,
+        playlistMeta.tracks.limit
+      );
+      playlistMeta.tracks.items = playlistMeta.tracks.items.concat(remainingTracks);
+      playlistMeta.tracks.limit = playlistMeta.tracks.total;
+    }
+    return playlistMeta;
   }
   return null;
 }

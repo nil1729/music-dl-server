@@ -1,9 +1,7 @@
 /*jshint esversion: 11 */
 
 const ErrorResponse = require('../../utils/ErrorResponse.class');
-const SuccessResponse = require('../../utils/SuccessResponse.class');
 const ErrorMessage = require('../../utils/ErrorMessage.enum.json');
-const validator = require('validator');
 const {
   getProcessedSpotifyLink,
   getSpotifyResourceType,
@@ -214,6 +212,53 @@ function sendSpotifyAlbumResponse(data) {
 
 /**
  *
+ * @param {data} data
+ */
+function sendSpotifyPlaylistResponse(data) {
+  const response = {
+    type: SPOTIFY_RESOURCE_TYPE.PLAYLIST,
+    id: data.id,
+    description: data.description,
+    images: data.images,
+    spotify_url: data.external_urls.spotify,
+    follower_count: data.followers.total,
+    name: data.name,
+    tracks: data.tracks.items
+      .filter((k) => k.track?.id)
+      .map((t) => {
+        return {
+          artists: t.track.artists.map((a) => {
+            return {
+              id: a.id,
+              name: a.name,
+              spotify_url: a.external_urls.spotify,
+            };
+          }),
+          album: {
+            id: t.track.album.id,
+            name: t.track.album.name,
+            spotify_url: t.track.album.external_urls.spotify,
+            release_date: t.track.album.release_date,
+            images: t.track.album.images,
+          },
+          added_at: t.added_at,
+          id: t.track.id,
+          name: t.track.name,
+          duration: t.track.duration_ms,
+          explicit: t.track.explicit,
+          preview_url: t.track.preview_url,
+          spotify_url: t.track.external_urls.spotify,
+          music_dl_downloaded: false,
+          music_dl_cdn: null,
+        };
+      }),
+    music_dl_hit: 0,
+  };
+  return response;
+}
+
+/**
+ *
  * @param {string} resourceType
  * @param {object} data
  */
@@ -222,8 +267,6 @@ function sendResponseFromLocal(resourceType, data) {
     return sendLocalTrackResponse(data);
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
     return sendLocalAlbumResponse(data);
-  } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
-    return sendPlaylistResponse(data);
   } else {
     throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
   }
@@ -240,7 +283,7 @@ function sendResponseFromSpotify(resourceType, data) {
   } else if (SPOTIFY_RESOURCE_TYPE.ALBUM === resourceType) {
     return sendSpotifyAlbumResponse(data);
   } else if (SPOTIFY_RESOURCE_TYPE.PLAYLIST === resourceType) {
-    return sendPlaylistResponse(data);
+    return sendSpotifyPlaylistResponse(data);
   } else {
     throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
   }
