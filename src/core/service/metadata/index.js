@@ -21,6 +21,7 @@ const logger = require('../../../../config/logger');
 const {
   MAX_RETRY: MAX_RETRY_FOR_SAVING,
   PLAYLIST_TRACK_SAVING_CHUNK_SIZE,
+  MAX_SLEEP_DURATION,
 } = require('../../../../config/env');
 
 /**
@@ -371,6 +372,7 @@ async function savePlaylistTracks(playlistId, playlistMeta) {
     await Promise.all(albumChunkPromise);
     offset += PLAYLIST_TRACK_SAVING_CHUNK_SIZE;
     iterationCount--;
+    await sleep();
   } while (iterationCount > 0);
 }
 
@@ -423,7 +425,16 @@ async function saveTrackMeta(trackId, localAlbumId = null, data = {}) {
  * @param {boolean} populated
  * @param {object} data
  */
-async function saveAlbumMeta(albumId, populated = false, data = {}) {
+async function saveAlbumMeta(
+  albumId,
+  populated = false,
+  data = {},
+  retryCount = MAX_RETRY_FOR_SAVING
+) {
+  if (retryCount > MAX_RETRY_FOR_SAVING) {
+    logger.warn('max retry count exceeded for saving album');
+    return;
+  }
   logger.info(`saving album metadata locally for album id: [${albumId}]`);
   return new Promise(async (resolve, reject) => {
     try {
@@ -453,7 +464,7 @@ async function saveAlbumMeta(albumId, populated = false, data = {}) {
       saveAlbumTrackMap(savedDoc.id, 0);
       resolve(savedDoc.id);
     } catch (e) {
-      reject(e);
+      return saveAlbumMeta(albumId, false, null, retryCount + 1);
     }
   });
 }
@@ -490,6 +501,7 @@ async function saveArtistMeta(artistId, retryCount = MAX_RETRY_FOR_SAVING) {
       resolve(savedDoc.id);
     } catch (e) {
       logger.error(e.message);
+      logger.warn(`failed to save artist metadata for artist id: [${artistId}]`);
       return saveArtistMeta(artistId, retryCount - 1);
     }
   });
@@ -532,8 +544,14 @@ async function saveAlbumTrackMap(localAlbumId, retryCount) {
     }
   } catch (e) {
     logger.error(e.message);
+    logger.warn(`failed to save album track map for localAlbumId [${localAlbumId}]`);
     return saveAlbumTrackMap(localAlbumId, retryCount + 1);
   }
+}
+
+async function sleep(duration = MAX_SLEEP_DURATION) {
+  logger.debug(`sleeping for [${Math.floor(duration / 1000)}] second(s)`);
+  return new Promise((resolve) => setTimeout(resolve, duration));
 }
 
 module.exports = { getMetadata, getLocalMetadata };
