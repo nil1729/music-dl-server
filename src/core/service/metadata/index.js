@@ -432,7 +432,7 @@ async function saveAlbumMeta(
   retryCount = MAX_RETRY_FOR_SAVING
 ) {
   if (retryCount > MAX_RETRY_FOR_SAVING) {
-    logger.warn('max retry count exceeded for saving album');
+    logger.warn(`max retry count exceeded for saving album with id: [${albumId}]`);
     return;
   }
   logger.info(`saving album metadata locally for album id: [${albumId}]`);
@@ -477,7 +477,7 @@ async function saveAlbumMeta(
  */
 async function saveArtistMeta(artistId, retryCount = MAX_RETRY_FOR_SAVING) {
   if (retryCount > MAX_RETRY_FOR_SAVING) {
-    logger.warn('max retry count exceeded for saving artist');
+    logger.warn(`max retry count exceeded for saving artist with id: [${artistId}]`);
     return;
   }
   logger.info(`saving artist metadata locally for artist id: [${artistId}]`);
@@ -513,7 +513,9 @@ async function saveArtistMeta(artistId, retryCount = MAX_RETRY_FOR_SAVING) {
  */
 async function saveAlbumTrackMap(localAlbumId, retryCount) {
   if (retryCount > MAX_RETRY_FOR_SAVING) {
-    logger.warn('max retry count exceeded for saving album track map');
+    logger.warn(
+      `max retry count exceeded for saving album track map with local album id: [${localAlbumId}]`
+    );
     return;
   }
   try {
@@ -550,7 +552,7 @@ async function saveAlbumTrackMap(localAlbumId, retryCount) {
 }
 
 async function sleep(duration = MAX_SLEEP_DURATION) {
-  logger.debug(`sleeping for [${Math.floor(duration / 1000)}] second(s)`);
+  logger.info(`sleeping for [${Math.floor(duration / 1000)}] second(s)`);
   return new Promise((resolve) => setTimeout(resolve, duration));
 }
 

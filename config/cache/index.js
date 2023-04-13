@@ -3,13 +3,12 @@ const logger = require('../logger');
 const RedisClient = require('./client');
 
 class MusicDlCache {
-  constructor(cacheClient) {
-    this.cacheClient = cacheClient;
+  constructor() {
     this.connect();
   }
 
   async connect() {
-    await this.cacheClient.connect();
+    await RedisClient.connect();
     logger.info('cache client connected successfully');
   }
 
@@ -40,4 +39,4 @@ class MusicDlCache {
   }
 }
 
-module.exports = new MusicDlCache(RedisClient);
+module.exports = new MusicDlCache();
