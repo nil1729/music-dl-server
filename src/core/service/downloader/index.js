@@ -10,6 +10,7 @@ const {
   MUSIC_DL_CDN_HOST,
   DOWNLOAD_PATH_M4A,
   DOWNLOAD_PATH_MP3,
+  CACHE_KEY_PREFIX,
 } = require('../../../../config/env');
 const { getLocalMetadata } = require('../metadata');
 const {
@@ -21,6 +22,8 @@ const {
   getYtAudioByMusicDlConverter,
 } = require('../../../downloader');
 const Path = require('path');
+const MusicDlCache = require('../../../../config/cache');
+const { saveAlbumMeta } = require('../metadata');
 
 /**
  *
@@ -30,12 +33,25 @@ const Path = require('path');
 async function getTrackCDN(trackId) {
   const trackDoc = await getLocalMetadata(SPOTIFY_RESOURCE_TYPE.TRACK, trackId);
   if (!trackDoc) {
-    throw new ErrorResponse(ErrorMessage.service_unavailable, 503);
+    return sendTrackFromCache(trackId);
   }
   if (trackDoc.music_dl_downloaded) {
     return sendAudioCdnFromLocal(trackDoc);
   }
   return downloadAndSendCDN(trackDoc);
+}
+
+/**
+ *
+ * @param {string} trackId
+ */
+async function sendTrackFromCache(trackId) {
+  const trackCacheKey = CACHE_KEY_PREFIX.TRACK + trackId;
+  const trackMeta = await MusicDlCache.getCache(trackCacheKey);
+  if (!trackMeta) {
+    throw new ErrorResponse(ErrorMessage.service_unavailable);
+  }
+  return downloadAndSendCDN(trackMeta, saveAudioFileFromCacheMeta);
 }
 
 /**
@@ -53,15 +69,15 @@ function sendAudioCdnFromLocal(track) {
  * @param {object} track
  * @returns
  */
-async function downloadAndSendCDN(track) {
+async function downloadAndSendCDN(track, saveFn = saveAudioFile) {
   const searchKeyword = `${track.name} ${track.artists[0].name}`;
-  const maxDuration = track.duration + 60 * 1000;
+  const maxDuration = track.duration_ms + 60 * 1000;
   const results = await getYtSearchResults(searchKeyword, maxDuration);
   if (results.length === 0) {
     throw new ErrorResponse(ErrorMessage.processing_failed);
   }
   const audioFilePath = await getAudioFile(results[0].url, track.track_id);
-  saveAudioFile(track, audioFilePath);
+  saveFn(track, audioFilePath);
   return buildLocalDownloadUrl(audioFilePath);
 }
 
@@ -112,6 +128,21 @@ async function getAudioM4a(ytUrl, trackId) {
     throw new ErrorResponse(ErrorMessage.processing_failed);
   }
   return Path.resolve(DOWNLOAD_PATH_M4A, m4aPath).toString();
+}
+
+/**
+ *
+ * @param {string} track
+ * @param {object} filePath
+ */
+async function saveAudioFileFromCacheMeta(trackMeta, filePath) {
+  logger.info(`saving track meta from cache for track id: [${trackMeta.id}]`);
+  await saveAlbumMeta(trackMeta.album.id);
+  const localTrackDoc = await LocalTrack.findOne({ track_id: trackMeta.id });
+  if (!localTrackDoc) {
+    logger.error(`track meta not saved properly for track id: [${trackMeta.id}]`);
+  }
+  saveAudioFile(localTrackDoc, filePath);
 }
 
 /**

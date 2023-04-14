@@ -31,7 +31,7 @@ const TrackSchema = new Schema(
         ref: 'Artist',
       },
     ],
-    duration: {
+    duration_ms: {
       type: Types.Number, // in ms
       required: true,
       default: 0,

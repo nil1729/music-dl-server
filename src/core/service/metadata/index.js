@@ -22,7 +22,10 @@ const {
   MAX_RETRY: MAX_RETRY_FOR_SAVING,
   PLAYLIST_TRACK_SAVING_CHUNK_SIZE,
   MAX_SLEEP_DURATION,
+  CACHE_KEY_PREFIX,
+  SPOTIFY_CACHE_TTL,
 } = require('../../../../config/env');
+const MusicDlCache = require('../../../../config/cache');
 
 /**
  *
@@ -52,7 +55,7 @@ function sendLocalTrackResponse(data) {
     type: SPOTIFY_RESOURCE_TYPE.TRACK,
     id: data.track_id,
     name: data.name,
-    duration: data.duration,
+    duration_ms: data.duration_ms,
     explicit: data.explicit,
     preview_url: data.preview_url,
     popularity: data.popularity,
@@ -89,7 +92,7 @@ function sendSpotifyTrackResponse(data) {
     type: SPOTIFY_RESOURCE_TYPE.TRACK,
     id: data.id,
     name: data.name,
-    duration: data.duration_ms,
+    duration_ms: data.duration_ms,
     explicit: data.explicit,
     preview_url: data.preview_url,
     popularity: data.popularity,
@@ -153,7 +156,7 @@ function sendLocalAlbumResponse(data) {
         }),
         id: t.track_id,
         name: t.name,
-        duration: t.duration,
+        duration_ms: t.duration_ms,
         explicit: t.explicit,
         preview_url: t.preview_url,
         spotify_url: t.spotify_app_url,
@@ -201,7 +204,7 @@ function sendSpotifyAlbumResponse(data) {
         }),
         id: t.id,
         name: t.name,
-        duration: t.duration_ms,
+        duration_ms: t.duration_ms,
         explicit: t.explicit,
         preview_url: t.preview_url,
         spotify_url: t.external_urls.spotify,
@@ -248,7 +251,7 @@ function sendSpotifyPlaylistResponse(data) {
           added_at: t.added_at,
           id: t.track.id,
           name: t.track.name,
-          duration: t.track.duration_ms,
+          duration_ms: t.track.duration_ms,
           explicit: t.track.explicit,
           preview_url: t.track.preview_url,
           spotify_url: t.track.external_urls.spotify,
@@ -352,28 +355,32 @@ async function saveLocalMeta(resourceType, resourceId, data) {
  * @param {object} playlistMeta
  */
 async function savePlaylistTracks(playlistId, playlistMeta) {
-  logger.info(`saving playlist track metadata locally for playlist id: [${playlistId}]`);
-
-  const albumSet = new Set();
+  logger.info(`saving playlist track metadata on cache for playlist id: [${playlistId}]`);
   const musicTracks = playlistMeta.tracks.items.filter((k) => k.track?.id);
-  musicTracks.forEach((m) => albumSet.add(m.track.album.id));
+  const promises = musicTracks.map((m) => saveTrackMetaOnCache(m.track.id, m.track));
+  await Promise.all(promises);
+}
 
-  const uniqueAlbumId = Array.from(albumSet.keys());
-  const totalUniqueAlbumCount = uniqueAlbumId.length;
-
-  let iterationCount = Math.ceil(totalUniqueAlbumCount / PLAYLIST_TRACK_SAVING_CHUNK_SIZE);
-  let offset = 0;
-  do {
-    logger.info(
-      `saving album chunk locally for playlist id: [${playlistId}] | iteration [${iterationCount}]`
+async function saveTrackMetaOnCache(trackId, trackMeta, retryCount = MAX_RETRY_FOR_SAVING) {
+  if (retryCount > MAX_RETRY_FOR_SAVING) {
+    logger.warn(
+      `max retry count exceeded for saving track metadata on cache for track id: [${trackId}]`
     );
-    const albumChunk = uniqueAlbumId.slice(offset, offset + PLAYLIST_TRACK_SAVING_CHUNK_SIZE);
-    const albumChunkPromise = albumChunk.map((a) => saveAlbumMeta(a));
-    await Promise.all(albumChunkPromise);
-    offset += PLAYLIST_TRACK_SAVING_CHUNK_SIZE;
-    iterationCount--;
-    await sleep();
-  } while (iterationCount > 0);
+    return;
+  }
+  try {
+    const existingLocalTrackDoc = await LocalTrack.findOne({ track_id: trackId });
+    if (!existingLocalTrackDoc) {
+      const trackIdKey = CACHE_KEY_PREFIX.TRACK + trackId;
+      await MusicDlCache.setCache(trackIdKey, trackMeta, SPOTIFY_CACHE_TTL.TRACK);
+    } else {
+      logger.info(`track metadata already exists for track id: [${trackId}]`);
+    }
+  } catch (e) {
+    console.debug(e);
+    logger.error(`couldn't save track metadata on cache for track id: [${trackId}]`);
+    return saveTrackMetaOnCache(trackId, trackMeta, retryCount + 1);
+  }
 }
 
 /**
@@ -401,7 +408,7 @@ async function saveTrackMeta(trackId, localAlbumId = null, data = {}) {
           spotify_app_url: trackMeta.external_urls.spotify,
           album: localAlbumId,
           artists: artistIdMapArray,
-          duration: trackMeta.duration_ms,
+          duration_ms: trackMeta.duration_ms,
           explicit: trackMeta.explicit,
           preview_url: trackMeta.preview_url,
           popularity: trackMeta.popularity,
@@ -440,7 +447,7 @@ async function saveAlbumMeta(
     try {
       const existingDoc = await LocalAlbum.findOne({ album_id: albumId }, { _id: 1 });
       if (existingDoc) {
-        saveAlbumTrackMap(existingDoc._id.toString(), 0);
+        await saveAlbumTrackMap(existingDoc._id.toString(), 0);
         return resolve(existingDoc._id.toString());
       }
       const albumMeta = populated ? data : await getAlbumMetadata(albumId);
@@ -461,7 +468,7 @@ async function saveAlbumMeta(
         track_count: albumMeta.tracks.total,
       };
       const savedDoc = await LocalAlbum.create(albumDoc);
-      saveAlbumTrackMap(savedDoc.id, 0);
+      await saveAlbumTrackMap(savedDoc.id, 0);
       resolve(savedDoc.id);
     } catch (e) {
       return saveAlbumMeta(albumId, false, null, retryCount + 1);
@@ -556,4 +563,4 @@ async function sleep(duration = MAX_SLEEP_DURATION) {
   return new Promise((resolve) => setTimeout(resolve, duration));
 }
 
-module.exports = { getMetadata, getLocalMetadata };
+module.exports = { getMetadata, getLocalMetadata, saveAlbumMeta };

@@ -38,4 +38,9 @@ module.exports = {
   },
   MAX_CACHE_TTL: Number(process.env.MAX_CACHE_TTL),
   MAX_SLEEP_DURATION: Number(process.env.MAX_SLEEP_DURATION),
+  CACHE_KEY_PREFIX: {
+    TRACK: process.env.SPOTIFY_TRACK_CACHE_KEY_PREFIX,
+    ALBUM: process.env.SPOTIFY_ALBUM_CACHE_KEY_PREFIX,
+    PLAYLIST: process.env.SPOTIFY_PLAYLIST_CACHE_KEY_PREFIX,
+  },
 };
