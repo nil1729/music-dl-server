@@ -12,4 +12,12 @@ async function trackIp(request) {
   logger.info(`client ip: [${clientIp}] published successfully`);
 }
 
-module.exports = { trackIp };
+/**
+ *
+ * @param {string} ipLog
+ */
+async function saveIpLog(ipLog) {
+  console.log('INSIDE SAVE IP LOG', ipLog);
+}
+
+module.exports = { trackIp, saveIpLog };

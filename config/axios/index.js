@@ -3,7 +3,7 @@
 const Axios = require('axios');
 const { MAX_API_TIMEOUT } = require('../env');
 
-async function getAxiosResponse(url, responseType, timeout = MAX_API_TIMEOUT) {
+async function getAxiosResponse(url, responseType = 'json', timeout = MAX_API_TIMEOUT) {
   try {
     const response = await Axios.get(url, {
       responseType: responseType,

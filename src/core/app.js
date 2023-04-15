@@ -10,6 +10,7 @@ const connectDatabase = require('../../config/db');
 const logger = require('../../config/logger');
 const { CORE_SERVICE_PORT: PORT, NODE_ENV } = require('../../config/env');
 const { initAccessTokenReloader } = require('../../config/spotify');
+const SubscriberService = require('../pubsub/subscriber');
 
 // Initialize App
 const app = express();
@@ -43,6 +44,7 @@ app.listen(PORT, async () => {
   await connectDatabase();
   logger.info(`core service running in ${NODE_ENV} mode on port ${PORT}`);
   initAccessTokenReloader();
+  SubscriberService.processIp();
 });
 
 module.exports = app;
