@@ -18,15 +18,15 @@ class PublisherService {
    *
    * @param {string} ip
    */
-  async publishIp(ip, retryCount = MAX_RETRY) {
+  async publishIpLog(ip, url, retryCount = MAX_RETRY) {
     if (retryCount > MAX_RETRY) {
       logger.error(`maximum retry exceeded to publish the client ip: [${ip}]`);
       return;
     }
-    const body = { ip: ip };
+    const body = { ip: ip, url: url };
     const ack = await this.channel.sendToQueue(IP_TRACKER_QUEUE, Buffer.from(JSON.stringify(body)));
     if (!ack) {
-      return this.publishIp(ip, retryCount + 1);
+      return this.publishIpLog(ip, url, retryCount + 1);
     }
   }
 }

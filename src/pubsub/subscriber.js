@@ -1,7 +1,7 @@
 const { IP_TRACKER_QUEUE, CONSUMER_SLEEP_DURATION } = require('../../config/env');
 const logger = require('../../config/logger');
 const connectToRabbitMq = require('../../config/pubsub');
-const { saveIpLog } = require('../core/service/ipTracker');
+const { saveIpLog, saveIpTrace } = require('../core/service/ipTracker');
 
 class SubscriberService {
   async connect() {
@@ -24,7 +24,8 @@ class SubscriberService {
       const messageString = message.content.toString();
       try {
         const ipJson = JSON.parse(messageString);
-        await saveIpLog(ipJson);
+        const ipTraceId = await saveIpTrace(ipJson.ip);
+        await saveIpLog(ipTraceId, ipJson.url);
         await cls.sleep();
         cls.channel.ack(message);
       } catch (e) {

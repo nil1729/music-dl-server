@@ -11,7 +11,7 @@ class IpTracker {
   async getInfo(ip) {
     const cachedData = await this.getDataFromCache(ip);
     if (cachedData) {
-      return this.sendResponse(ip);
+      return this.sendResponse(cachedData);
     }
     return this.getFromProvider(ip);
   }
@@ -29,7 +29,7 @@ class IpTracker {
     return MusicDlCache.getCache(this.getCacheKey(ip));
   }
 
-  async getFromProvider() {
+  async getFromProvider(ip) {
     logger.info(`getting ip information from provider [${ip}]`);
     const responseData = await getAxiosResponse(this.getApiUrl(ip));
     this.saveDataOnCache(ip, responseData);
@@ -42,7 +42,18 @@ class IpTracker {
    * @returns {body: object}
    */
   sendResponse(data) {
-    return { body: data };
+    return {
+      body: {
+        country: data.country,
+        country_code: data.countryCode,
+        region: data.region,
+        region_name: data.regionName,
+        lat: data.lat,
+        lng: data.lon,
+        timezone: data.timezone,
+        isp: data.isp,
+      },
+    };
   }
 
   /**
