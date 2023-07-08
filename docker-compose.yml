@@ -45,6 +45,11 @@ services:
     image: "nil1729/yt-dl-fast-api"
     environment:
       - PORT=9090
+    deploy:
+      replicas: 4
+      restart_policy:
+        max_attempts: 3
+        condition: on-failure
     healthcheck:
       test: curl -vvv 0.0.0.0:9090
       interval: 30s
@@ -52,16 +57,26 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - n_core
+      - n_downloader
     volumes:
       - downloads_data:/usr/downloads
+
+  downloader_lb:
+    build:
+      context: ./lb/downloader
+      dockerfile: Dockerfile
+    depends_on:
+      downloader:
+        condition: service_healthy
+    restart: always
+    networks:
+      - n_core
+      - n_downloader
 
   core:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "9999:8080"
     env_file:
       - ./_local/docker.env
     depends_on:
@@ -71,18 +86,37 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
-      downloader:
-        condition: service_healthy
-    restart: always
+      downloader_lb:
+        condition: service_started
+    deploy:
+      replicas: 2
+      restart_policy:
+        max_attempts: 3
+        condition: on-failure
     networks:
       - n_core
     volumes:
       - downloads_data:/tmp/m-dl/downloads
       - tmp_data:/opt/m-dl
 
+  gateway:
+    build:
+      context: ./lb/core
+      dockerfile: Dockerfile
+    ports:
+      - "9999:80"
+    depends_on:
+      core:
+        condition: service_started
+    restart: always
+    networks:
+      - n_core
+      - n_gateway
+
 networks:
   n_core:
   n_downloader:
+  n_gateway:
 
 volumes:
   mongodb_data:
