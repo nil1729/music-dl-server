@@ -1,12 +1,12 @@
-const logger = require('../../../../config/logger');
-const PublisherService = require('../../../pubsub/publisher');
-const IpTrace = require('../../model/IpTrace');
-const IpTracker = require('../../../../config/ipTracker');
-const IpTraceUrlMap = require('../../model/IpTraceUrlMap');
+const logger = require("../../../../config/logger");
+const PublisherService = require("../../../pubsub/publisher");
+const IpTrace = require("../../model/IpTrace");
+const IpTracker = require("../../../../config/ipTracker");
+const IpTraceUrlMap = require("../../model/IpTraceUrlMap");
 const {
   IP_TRACKING_SERVICE_STATUS,
   IP_TRACKING_RUNNING_STATUS,
-} = require('../../../../config/env');
+} = require("../../../../config/env");
 
 /**
  *
@@ -15,12 +15,16 @@ const {
 async function trackIp(request) {
   if (IP_TRACKING_RUNNING_STATUS === IP_TRACKING_SERVICE_STATUS.RUNNING) {
     // running nginx as reverse proxy
-    const clientIp = request.headers['x-forwarded-for'];
-    const existingIpTrace = await getIpTrace(clientIp);
-    if (existingIpTrace) {
-      return saveIpLog(existingIpTrace._id, request.originalUrl);
+    const clientIpString = request.headers["x-forwarded-for"];
+    const clientIpList = clientIpString.split(",").map((ip) => ip.trim());
+
+    for (const ipAddr of clientIpList) {
+      const existingIpTrace = await getIpTrace(ipAddr);
+      if (existingIpTrace) {
+        return saveIpLog(existingIpTrace._id, request.originalUrl);
+      }
+      publishIpLog(ipAddr, request.originalUrl);
     }
-    publishIpLog(clientIp, request.originalUrl);
   }
 }
 
@@ -64,7 +68,9 @@ async function saveIpTrace(ip) {
 }
 
 async function saveIpLog(ipTraceId, urlPath) {
-  logger.info(`saving ip trace id [${ipTraceId}] trace and url [${urlPath}] map into database`);
+  logger.info(
+    `saving ip trace id [${ipTraceId}] trace and url [${urlPath}] map into database`
+  );
   try {
     const ipTraceUrlMapDoc = { ip_trace_id: ipTraceId, url: urlPath };
     const existingIpTraceUrlMap = await IpTraceUrlMap.findOne(ipTraceUrlMapDoc);
