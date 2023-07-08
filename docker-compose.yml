@@ -1,0 +1,92 @@
+version: "3.8"
+services:
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    ports:
+      - "8888:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+    networks:
+      - n_core
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  redis:
+    image: "redis"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    networks:
+      - n_core
+    volumes:
+      - redis_data:/data
+
+  mongodb:
+    image: "mongo"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    networks:
+      - n_core
+    volumes:
+      - mongodb_data:/data/db
+
+  downloader:
+    image: "nil1729/yt-dl-fast-api"
+    environment:
+      - PORT=9090
+    healthcheck:
+      test: curl -vvv 0.0.0.0:9090
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    networks:
+      - n_core
+    volumes:
+      - downloads_data:/usr/downloads
+
+  core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9999:8080"
+    env_file:
+      - ./_local/docker.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      downloader:
+        condition: service_healthy
+    restart: always
+    networks:
+      - n_core
+    volumes:
+      - downloads_data:/tmp/m-dl/downloads
+      - tmp_data:/opt/m-dl
+
+networks:
+  n_core:
+  n_downloader:
+
+volumes:
+  mongodb_data:
+  redis_data:
+  rabbitmq_data:
+  downloads_data:
+  tmp_data:
