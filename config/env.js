@@ -52,6 +52,7 @@ module.exports = {
     PLAYLIST: process.env.SPOTIFY_PLAYLIST_CACHE_KEY_PREFIX,
     IP_TRACKER: process.env.IP_TRACKER_CACHE_KEY_PREFIX,
   },
+  REDIS_URL: process.env.REDIS_URL,
   RABBIT_MQ_URL: process.env.RABBIT_MQ_URL,
   IP_TRACKER_QUEUE: process.env.IP_TRACKER_QUEUE,
   IP_TRACKER_API: process.env.IP_TRACKER_API,
