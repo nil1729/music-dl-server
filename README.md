@@ -8,14 +8,14 @@ The `music-dl-server` is a backend server that I developed specifically to integ
 
 One of the main considerations during development was scalability. I designed the server architecture and implemented features with scalability in mind, ensuring that it can handle increased traffic and user demand as the mobile application grows in popularity. This includes utilizing caching mechanisms to optimize performance and minimize external API calls, as well as implementing IP tracing for logging and analytics purposes.
 
----
-
 ## Features
 
 - **IP Tracing:** The server tracks the IP address of incoming requests, allowing for logging and analytics.
 - **Caching:** To optimize performance and reduce external API calls, the server implements caching mechanisms to store retrieved metadata and downloaded songs.
 
----
+## Architecture
+
+![Architecture Diagram](./assets/architecture.png)
 
 ## APIs
 
@@ -33,8 +33,6 @@ Endpoint: `/api/spotify/download/track/{{track_id}}`
 
 This API enables you to download a song by providing its track identifier. The server performs a reverse search on YouTube using the song's name and retrieves the corresponding media file for download.
 
----
-
 ## Usage
 
 To use the `music-dl-server`, follow these steps:
@@ -51,7 +49,7 @@ To use the `music-dl-server`, follow these steps:
 
    - `SPOTIFY_CLIENT_ID`: Your Spotify application client ID.
    - `SPOTIFY_CLIENT_SECRET`: Your Spotify application client secret.
-   - `MUSIC_DL_BUCKET_NAME`: a dummy github repo where you want to store downloaded songs (see `\_local/docker.env.sample`)
+   - `MUSIC_DL_BUCKET_NAME`: a dummy github repo where you want to store downloaded songs (see `_local/docker.env.sample`)
    - `MUSIC_DL_STORAGE_ACCESS_TOKEN`: github access token with push access
 
    Create `_local/docker.env` file with the content of `_local/docker.env.sample` and configure above env vars
@@ -66,6 +64,6 @@ The server will start running on `http://localhost:9999` and **rabbitmq** manage
 
 ---
 
-### Disclaimer
+## Disclaimer
 
 The `music-dl-server` is intended for personal use only and should comply with the terms and conditions of the Spotify and YouTube platforms.
