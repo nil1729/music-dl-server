@@ -1,5 +1,5 @@
 # Use a minimal Alpine Linux base image
-FROM node:16.17.0-alpine
+FROM node:16.20.2-alpine
 
 # Set working directory in the container
 WORKDIR /usr/app
